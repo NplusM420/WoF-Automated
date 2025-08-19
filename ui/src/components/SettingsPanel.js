@@ -162,7 +162,7 @@ function SettingsPanel({ status }) {
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-400">Daily Limit:</span>
-                <span>500 tokens</span>
+                <span>1000 tokens</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Mint Strategy:</span>
@@ -195,7 +195,7 @@ function SettingsPanel({ status }) {
               <ul className="text-sm text-slate-400 space-y-1">
                 <li>• Automated minting with real-time progress tracking</li>
                 <li>• Individual token minting with 1-second delays</li>
-                <li>• Daily limit management (500 tokens/day)</li>
+                <li>• Daily limit management (1000 tokens/day)</li>
                 <li>• Transaction receipt parsing for token ID extraction</li>
               </ul>
             </div>
@@ -216,7 +216,7 @@ function SettingsPanel({ status }) {
               <h3 className="font-semibold mb-2 text-blue-400">🔄 Daily Auto-Repeat</h3>
               <ul className="text-sm text-slate-400 space-y-1">
                 <li>• 24-hour automated cycling</li>
-                <li>• Mint 500 + convert all tokens automatically</li>
+                <li>• Mint 1000 + convert all tokens automatically</li>
                 <li>• Persistent scheduling across server restarts</li>
                 <li>• 2-minute safety buffer after cooldown expires</li>
               </ul>

@@ -137,6 +137,13 @@ export const contractABI = [
   },
   // Minting function (payable)
   {
+    "inputs": [],
+    "name": "mint",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
     "stateMutability": "payable",
     "type": "receive"
   }

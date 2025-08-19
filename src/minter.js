@@ -60,7 +60,7 @@ export class MultiBallMinter {
 
   async getMintedToday() {
     // Always use local tracking for immediate updates during minting operations
-    // This ensures real-time progress display (1/500, 2/500, etc.)
+    // This ensures real-time progress display (1/1000, 2/1000, etc.)
     return this.dailyMintCount;
   }
 

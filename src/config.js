@@ -16,7 +16,7 @@ export const config = {
   secretSantaAddress: process.env.SECRET_SANTA_ADDRESS || '0x80a5e6d411002891e519f531785e7686b3c467ed', // SecretSanta conversion contract
   
   // Minting Configuration
-  maxDailyMint: parseInt(process.env.MAX_DAILY_MINT) || 500,
+  maxDailyMint: parseInt(process.env.MAX_DAILY_MINT) || 1000,
   mintQuantityPerTx: parseInt(process.env.MINT_QUANTITY_PER_TX) || 10,
   
   // Gas Configuration

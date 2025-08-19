@@ -157,7 +157,7 @@ function Dashboard({ status, tokens, spinStatus, onRefresh }) {
             <div>
               <p className="text-slate-400 text-sm">Daily Minted</p>
               <p className="text-2xl font-bold">
-                {status.wallet ? status.wallet.dailyMinted : 0} / {status.wallet ? status.wallet.dailyLimit : 500}
+                {status.wallet ? status.wallet.dailyMinted : 0} / {status.wallet ? status.wallet.dailyLimit : 1000}
               </p>
             </div>
             <TrendingUp className="w-8 h-8 text-purple-400" />
@@ -230,7 +230,7 @@ function Dashboard({ status, tokens, spinStatus, onRefresh }) {
                 value={dailyTargetLimit}
                 onChange={(e) => setDailyTargetLimit(parseInt(e.target.value) || 0)}
                 min="1"
-                max={status.wallet ? status.wallet.remainingToday : 500}
+                max={status.wallet ? status.wallet.remainingToday : 1000}
                 className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 placeholder="How many to mint today"
               />
@@ -271,7 +271,7 @@ function Dashboard({ status, tokens, spinStatus, onRefresh }) {
             </div>
             
             <div className="text-sm text-slate-400 space-y-1">
-              <p>✨ Automatically runs full cycle (mint 500 + convert all) every 24 hours</p>
+              <p>✨ Automatically runs full cycle (mint 1000 + convert all) every 24 hours</p>
               <p>⏰ Includes 2-minute safety buffer after cooldown expires</p>
               <p>🔄 Survives server restarts and continues scheduling</p>
             </div>

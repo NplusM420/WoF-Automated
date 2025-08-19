@@ -194,7 +194,7 @@ async function initializeAutomation(encryptionPassword = null) {
         return;
       }
       
-      // Trigger full automation (mint 500 + convert all)
+      // Trigger full automation (mint 1000 + convert all)
       isRunning = true;
       currentOperation = 'daily-automation';
       
@@ -204,9 +204,9 @@ async function initializeAutomation(encryptionPassword = null) {
       });
       
       try {
-        // Phase 1: Mint 500 tokens
-        log('🎯 Daily automation: Phase 1 - Minting 500 MULTIBALL tokens...', 'info');
-        const mintResult = await minter.fullAutomation(500);
+        // Phase 1: Mint 1000 tokens
+        log('🎯 Daily automation: Phase 1 - Minting 1000 MULTIBALL tokens...', 'info');
+        const mintResult = await minter.fullAutomation(1000);
         
         if (!mintResult.success) {
           throw new Error(`Minting failed: ${mintResult.error}`);
@@ -659,7 +659,7 @@ app.post('/api/full-automation', async (req, res) => {
       log(`✅ Full automation completed successfully`, 'success');
       
       // Record completion for daily automation scheduling
-      if (dailyAutomation && quantity >= 500) {
+      if (dailyAutomation && quantity >= 1000) {
         dailyAutomation.recordCompletedRun();
         log(`📅 Recorded completion for daily automation scheduling`, 'info');
       }
