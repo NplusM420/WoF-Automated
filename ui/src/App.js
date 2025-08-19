@@ -25,7 +25,6 @@ function App() {
   const [logs, setLogs] = useState([]);
   const [tokens, setTokens] = useState([]);
   const [spinStatus, setSpinStatus] = useState([]);
-  const [ws, setWs] = useState(null);
   const [showInitModal, setShowInitModal] = useState(false);
   const [initError, setInitError] = useState(null);
 
@@ -138,6 +137,26 @@ function App() {
             <div>
               <h1 className="text-xl font-bold">SpotSpinner</h1>
               <p className="text-sm text-slate-400">MULTIBALL Automation</p>
+            </div>
+            
+            {/* Developer Attribution */}
+            <div className="hidden md:flex items-center space-x-6 text-sm">
+              <div className="flex items-center space-x-2">
+                <span className="text-slate-500">Built by</span>
+                <a
+                  href="https://x.com/AThinkingMind"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
+                >
+                  @AThinkingMind
+                </a>
+              </div>
+              <div className="w-px h-4 bg-slate-600"></div>
+              <div className="flex items-center space-x-2">
+                <span className="text-slate-500">Tip:</span>
+                <code className="text-green-400 text-xs">0x2616BA6e0AA6dA3F10858c350D447375a39A9b45</code>
+              </div>
             </div>
           </div>
           

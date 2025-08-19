@@ -18,7 +18,10 @@
       "Bash(cd:*)",
       "Bash(cd:*)",
       "Bash(rm:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(timeout 30 npm run build)",
+      "Bash(CI=false npm run build)",
+      "Bash(timeout 300 npm run build)"
     ],
     "deny": [],
     "ask": []
