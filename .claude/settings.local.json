@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:apescan.io)",
+      "WebFetch(domain:wheeloffate.apechain.com)",
+      "Bash(cd:*)",
+      "Bash(cd:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev-ui:*)",
+      "Bash(npm run:*)",
+      "WebFetch(domain:api.apechain.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(node:*)",
+      "Bash(npm:*)",
+      "Bash(curl:*)",
+      "Bash(cd:*)",
+      "Bash(cd:*)",
+      "Bash(cd:*)",
+      "Bash(rm:*)",
+      "Bash(mv:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
