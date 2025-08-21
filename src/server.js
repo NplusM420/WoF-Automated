@@ -772,6 +772,69 @@ app.post('/api/burn-tickets', async (req, res) => {
   }
 });
 
+// Dry-run burn losing Prize Tickets (analysis only)
+app.post('/api/burn-tickets-dry-run', async (req, res) => {
+  try {
+    if (!spinner) {
+      return res.status(400).json({ error: 'System not initialized' });
+    }
+    
+    if (isRunning) {
+      return res.status(400).json({ error: 'Another operation is currently running' });
+    }
+    
+    isRunning = true;
+    currentOperation = 'burn-tickets-analysis';
+    
+    broadcast({
+      type: 'operationStart',
+      data: { operation: 'burn-tickets-analysis' }
+    });
+    
+    log(`🧪 Starting dry-run analysis of Prize Tickets...`, 'info');
+    
+    // Progress callback for real-time updates
+    const progressCallback = (progress) => {
+      currentOperationProgress = { 
+        operation: 'burn-tickets-analysis', 
+        ...progress,
+        timestamp: new Date().toISOString()
+      };
+      
+      broadcast({
+        type: 'operationProgress',
+        data: currentOperationProgress
+      });
+      log(`🧪 Analysis progress: ${progress.message} (${progress.progress}%)`, 'info');
+    };
+    
+    const result = await spinner.burnLosingTickets(progressCallback, true); // dryRun = true
+    
+    isRunning = false;
+    currentOperation = null;
+    currentOperationProgress = null;
+    
+    broadcast({
+      type: 'operationComplete',
+      data: { operation: 'burn-tickets-analysis', result }
+    });
+    
+    if (result.success) {
+      log(`✅ Dry-run analysis completed: ${result.losingTickets} losing tickets identified`, 'success');
+    } else {
+      log(`❌ Dry-run analysis failed: ${result.error || 'Unknown error'}`, 'error');
+    }
+    
+    res.json(result);
+  } catch (error) {
+    isRunning = false;
+    currentOperation = null;
+    currentOperationProgress = null;
+    log(`❌ Burn tickets dry-run error: ${error.message}`, 'error');
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // DEBUG: Get token database stats
 app.get('/api/debug/token-stats', async (req, res) => {
   try {

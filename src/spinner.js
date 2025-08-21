@@ -939,9 +939,13 @@ export class AutoSpinner {
   }
 
   // NEW: Burn losing Prize Tickets
-  async burnLosingTickets(progressCallback = null) {
+  async burnLosingTickets(progressCallback = null, dryRun = false) {
     try {
-      this.log('🔥 Starting to burn losing Prize Tickets...');
+      if (dryRun) {
+        this.log('🧪 DRY RUN: Analyzing Prize Tickets (no burning will occur)...');
+      } else {
+        this.log('🔥 Starting to burn losing Prize Tickets...');
+      }
       
       // Emit initial progress
       if (progressCallback) {
@@ -991,18 +995,13 @@ export class AutoSpinner {
             }
           }
           
-          // Get token metadata to check if it's a losing ticket
-          const tokenURI = await this.prizeTicketContract.tokenURI(tokenId);
-          
-          // For now, we'll implement a basic check
-          // In a real implementation, you'd parse the metadata JSON
-          // and look for "WIN: NO" or similar indicators
-          
-          // Placeholder logic - you may need to adjust based on actual metadata format
-          if (tokenURI && tokenURI.includes('metadata')) {
-            // This is a simplified check - real implementation would fetch and parse JSON
-            // For now, we'll skip actual burning until we can properly identify losing tickets
-            this.log(`   Token ${tokenId}: Checking metadata...`);
+          // Check if this ticket is a losing ticket using proper metadata parsing
+          const isLosing = await this.isLosingTicket(tokenId);
+          if (isLosing) {
+            losingTickets.push(tokenId);
+            this.log(`   Token ${tokenId}: ❌ Losing ticket identified`);
+          } else {
+            this.log(`   Token ${tokenId}: ✅ Safe ticket (winning or unknown)`);
           }
           
         } catch (error) {
@@ -1018,7 +1017,27 @@ export class AutoSpinner {
           message: 'No losing tickets found to burn',
           ticketsChecked: prizeTickets.length,
           losingTickets: 0,
-          burned: 0
+          burned: 0,
+          dryRun
+        };
+      }
+      
+      // DRY RUN: Just return analysis without burning
+      if (dryRun) {
+        this.log('\n🧪 DRY RUN COMPLETE:');
+        this.log(`   ✅ Total tickets analyzed: ${prizeTickets.length}`);
+        this.log(`   ❌ Losing tickets found: ${losingTickets.length}`);
+        this.log(`   🛡️ Safe tickets (winning/unknown): ${prizeTickets.length - losingTickets.length}`);
+        this.log(`   🔥 Would burn token IDs: [${losingTickets.join(', ')}]`);
+        
+        return {
+          success: true,
+          message: `DRY RUN: Found ${losingTickets.length} losing tickets to burn`,
+          ticketsChecked: prizeTickets.length,
+          losingTickets: losingTickets.length,
+          burned: 0,
+          dryRun: true,
+          losingTokenIds: losingTickets
         };
       }
       
