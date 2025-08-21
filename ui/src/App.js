@@ -12,6 +12,7 @@ import LogsPanel from './components/LogsPanel';
 import SettingsPanel from './components/SettingsPanel';
 import StatusBar from './components/StatusBar';
 import InitializationModal from './components/InitializationModal';
+import LeaderboardWidget from './components/LeaderboardWidget';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -27,6 +28,7 @@ function App() {
   const [spinStatus, setSpinStatus] = useState([]);
   const [showInitModal, setShowInitModal] = useState(false);
   const [initError, setInitError] = useState(null);
+  const [operationProgress, setOperationProgress] = useState(null);
 
   // Periodic status updates (instead of WebSocket)
   useEffect(() => {
@@ -35,6 +37,7 @@ function App() {
     
     const updateInterval = setInterval(() => {
       fetchStatus();
+      fetchProgress(); // Always fetch progress for real-time updates
       if (activeTab === 'logs') {
         fetchLogs();
       }
@@ -47,6 +50,7 @@ function App() {
   useEffect(() => {
     fetchStatus();
     fetchTokens();
+    fetchProgress();
   }, []);
 
   const fetchStatus = async () => {
@@ -87,6 +91,18 @@ function App() {
       }
     } catch (error) {
       console.error('Failed to fetch logs:', error);
+    }
+  };
+
+  const fetchProgress = async () => {
+    try {
+      const response = await fetch('/api/progress');
+      if (response.ok) {
+        const data = await response.json();
+        setOperationProgress(data.progress);
+      }
+    } catch (error) {
+      console.error('Failed to fetch progress:', error);
     }
   };
 
@@ -209,9 +225,11 @@ function App() {
             status={status}
             tokens={tokens}
             spinStatus={spinStatus}
+            operationProgress={operationProgress}
             onRefresh={() => {
               fetchStatus();
               fetchTokens();
+              fetchProgress();
             }}
           />
         )}
@@ -242,6 +260,9 @@ function App() {
           error={initError}
         />
       )}
+
+      {/* Floating Leaderboard Widget */}
+      <LeaderboardWidget />
     </div>
   );
 }

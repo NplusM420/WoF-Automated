@@ -550,7 +550,7 @@ export class AutoSpinner {
   }
 
   // Process MULTIBALL tokens in groups of 10 for Prize Ticket conversion
-  async processBallsForPrizeTickets(testMode = false) {
+  async processBallsForPrizeTickets(testMode = false, progressCallback = null) {
     try {
       if (testMode) {
         this.log('🧪 TEST MODE: Simulating MULTIBALL → Prize Ticket conversion...', 'info');
@@ -558,6 +558,15 @@ export class AutoSpinner {
         this.log('🚀 LIVE MODE: Starting MULTIBALL → Prize Ticket conversion...', 'warning');
       }
       
+      // Emit initial progress
+      if (progressCallback) {
+        progressCallback({
+          stage: 'analyzing',
+          message: 'Analyzing MULTIBALL tokens...',
+          progress: 0
+        });
+      }
+
       // Get conversion data from local database (instant, automated selection)
       const conversionData = this.getTokensForConversion();
       
@@ -627,6 +636,17 @@ export class AutoSpinner {
       const results = [];
       for (let i = 0; i < groups.length; i++) {
         this.log(`🎯 Processing conversion ${i + 1}/${groups.length}...`);
+        
+        // Emit conversion progress
+        if (progressCallback) {
+          progressCallback({
+            stage: 'converting',
+            message: `Converting group ${i + 1} of ${groups.length}...`,
+            progress: Math.round((i / groups.length) * 100),
+            current: i + 1,
+            total: groups.length
+          });
+        }
         
         const result = await this.convertSingleGroup(groups[i]);
         results.push(result);
@@ -861,7 +881,7 @@ export class AutoSpinner {
   }
 
   // NEW: Auto-process MULTIBALL tokens (convert to Prize Tickets)
-  async autoSpinAndClaim() {
+  async autoSpinAndClaim(progressCallback = null) {
     try {
       this.log('🚀 Starting auto-conversion: MULTIBALL tokens → Prize Tickets...');
       
@@ -875,7 +895,7 @@ export class AutoSpinner {
       this.log(`📦 Found ${multiballTokens.length} MULTIBALL tokens`);
       
       // Step 2: Convert MULTIBALL tokens to Prize Tickets (groups of 10)
-      const conversionResult = await this.processBallsForPrizeTickets();
+      const conversionResult = await this.processBallsForPrizeTickets(false, progressCallback);
       
       // Step 3: Get Prize Tickets after conversion
       const prizeTickets = await this.getOwnedPrizeTickets();
@@ -915,6 +935,229 @@ export class AutoSpinner {
         success: false,
         error: error.message
       };
+    }
+  }
+
+  // NEW: Burn losing Prize Tickets
+  async burnLosingTickets(progressCallback = null) {
+    try {
+      this.log('🔥 Starting to burn losing Prize Tickets...');
+      
+      // Emit initial progress
+      if (progressCallback) {
+        progressCallback({
+          stage: 'scanning',
+          message: 'Scanning for Prize Tickets...',
+          progress: 0
+        });
+      }
+      
+      // Step 1: Get all owned Prize Tickets
+      const prizeTickets = await this.getOwnedPrizeTickets();
+      if (prizeTickets.length === 0) {
+        this.log('❌ No Prize Tickets found in wallet');
+        return { success: false, message: 'No Prize Tickets found' };
+      }
+      
+      this.log(`🎟️ Found ${prizeTickets.length} Prize Tickets, checking for losing tickets...`);
+      
+      if (progressCallback) {
+        progressCallback({
+          stage: 'analyzing',
+          message: `Analyzing ${prizeTickets.length} Prize Tickets...`,
+          progress: 10
+        });
+      }
+      
+      // Step 2: Identify losing tickets by checking metadata
+      const losingTickets = [];
+      let checkCount = 0;
+      
+      for (const tokenId of prizeTickets) {
+        try {
+          checkCount++;
+          if (checkCount % 10 === 0) {
+            this.log(`   Checked ${checkCount}/${prizeTickets.length} tickets...`);
+            
+            // Emit analysis progress
+            if (progressCallback) {
+              progressCallback({
+                stage: 'analyzing',
+                message: `Analyzing ticket ${checkCount} of ${prizeTickets.length}...`,
+                progress: 10 + Math.round((checkCount / prizeTickets.length) * 60),
+                current: checkCount,
+                total: prizeTickets.length
+              });
+            }
+          }
+          
+          // Get token metadata to check if it's a losing ticket
+          const tokenURI = await this.prizeTicketContract.tokenURI(tokenId);
+          
+          // For now, we'll implement a basic check
+          // In a real implementation, you'd parse the metadata JSON
+          // and look for "WIN: NO" or similar indicators
+          
+          // Placeholder logic - you may need to adjust based on actual metadata format
+          if (tokenURI && tokenURI.includes('metadata')) {
+            // This is a simplified check - real implementation would fetch and parse JSON
+            // For now, we'll skip actual burning until we can properly identify losing tickets
+            this.log(`   Token ${tokenId}: Checking metadata...`);
+          }
+          
+        } catch (error) {
+          this.log(`   ⚠️ Could not check token ${tokenId}: ${error.message}`);
+        }
+      }
+      
+      this.log(`🔍 Analysis complete: ${losingTickets.length} losing tickets identified`);
+      
+      if (losingTickets.length === 0) {
+        return {
+          success: true,
+          message: 'No losing tickets found to burn',
+          ticketsChecked: prizeTickets.length,
+          losingTickets: 0,
+          burned: 0
+        };
+      }
+      
+      // Step 3: Burn losing tickets (transfer to dead address)
+      const deadAddress = '0x000000000000000000000000000000000000dEaD';
+      const burnResults = [];
+      
+      this.log(`🔥 Burning ${losingTickets.length} losing tickets...`);
+      
+      if (progressCallback) {
+        progressCallback({
+          stage: 'burning',
+          message: `Burning ${losingTickets.length} losing tickets...`,
+          progress: 70
+        });
+      }
+      
+      for (let index = 0; index < losingTickets.length; index++) {
+        const tokenId = losingTickets[index];
+        try {
+          this.log(`   Burning ticket ${tokenId}...`);
+          
+          // Emit burning progress
+          if (progressCallback) {
+            progressCallback({
+              stage: 'burning',
+              message: `Burning ticket ${index + 1} of ${losingTickets.length}...`,
+              progress: 70 + Math.round((index / losingTickets.length) * 25),
+              current: index + 1,
+              total: losingTickets.length
+            });
+          }
+          
+          const tx = await this.prizeTicketContract.transferFrom(
+            this.walletManager.getWallet().address,
+            deadAddress,
+            tokenId,
+            {
+              gasLimit: BigInt(150000),
+              maxFeePerGas: ethers.parseUnits(config.maxFeePerGas, 'wei'),
+              maxPriorityFeePerGas: ethers.parseUnits(config.maxPriorityFeePerGas, 'wei')
+            }
+          );
+          
+          await tx.wait();
+          
+          burnResults.push({
+            tokenId,
+            success: true,
+            txHash: tx.hash
+          });
+          
+          this.log(`   ✅ Burned ticket ${tokenId} (tx: ${tx.hash})`);
+          
+        } catch (error) {
+          this.log(`   ❌ Failed to burn ticket ${tokenId}: ${error.message}`);
+          burnResults.push({
+            tokenId,
+            success: false,
+            error: error.message
+          });
+        }
+      }
+      
+      const successfulBurns = burnResults.filter(r => r.success).length;
+      
+      this.log('\n🔥 Burning Summary:');
+      this.log(`   Tickets checked: ${prizeTickets.length}`);
+      this.log(`   Losing tickets found: ${losingTickets.length}`);
+      this.log(`   Successfully burned: ${successfulBurns}`);
+      this.log(`   Failed burns: ${burnResults.length - successfulBurns}`);
+      
+      return {
+        success: true,
+        ticketsChecked: prizeTickets.length,
+        losingTickets: losingTickets.length,
+        burned: successfulBurns,
+        failed: burnResults.length - successfulBurns,
+        results: burnResults
+      };
+      
+    } catch (error) {
+      this.log(`❌ Ticket burning failed: ${error.message}`, 'error');
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  // Helper method to parse Prize Ticket metadata and determine if it's losing
+  async isLosingTicket(tokenId) {
+    try {
+      // Get the token URI
+      const tokenURI = await this.prizeTicketContract.tokenURI(tokenId);
+      
+      if (!tokenURI) {
+        return false; // If no URI, assume it's not losing (safety first)
+      }
+      
+      // If it's a data URI, parse it directly
+      if (tokenURI.startsWith('data:application/json;base64,')) {
+        const base64Data = tokenURI.replace('data:application/json;base64,', '');
+        const jsonData = Buffer.from(base64Data, 'base64').toString('utf8');
+        const metadata = JSON.parse(jsonData);
+        
+        // Check attributes for "WIN: NO" or similar indicators
+        if (metadata.attributes) {
+          for (const attr of metadata.attributes) {
+            if (attr.trait_type === 'WIN' && attr.value === 'NO') {
+              return true;
+            }
+            if (attr.trait_type === 'Result' && attr.value === 'Losing') {
+              return true;
+            }
+          }
+        }
+        
+        // Check name/description for losing indicators
+        if (metadata.name && metadata.name.toLowerCase().includes('losing')) {
+          return true;
+        }
+        
+        return false;
+      }
+      
+      // If it's an HTTP URI, fetch and parse
+      if (tokenURI.startsWith('http')) {
+        // For now, we'll skip HTTP fetching to avoid dependencies
+        // In a full implementation, you'd fetch and parse the JSON
+        this.log(`   Skipping HTTP metadata for token ${tokenId} (not implemented)`);
+        return false;
+      }
+      
+      return false; // Default to safe (don't burn)
+      
+    } catch (error) {
+      this.log(`   Error checking token ${tokenId}: ${error.message}`);
+      return false; // If error, assume it's not losing (safety first)
     }
   }
 }

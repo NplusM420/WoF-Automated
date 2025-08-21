@@ -104,6 +104,7 @@ let walletManager = null;
 let dailyAutomation = null;
 let isRunning = false;
 let currentOperation = null;
+let currentOperationProgress = null;
 let logs = [];
 let connectedClients = [];
 
@@ -292,6 +293,15 @@ app.post('/api/initialize', async (req, res) => {
   }
 });
 
+// Get current operation progress
+app.get('/api/progress', (req, res) => {
+  res.json({
+    progress: currentOperationProgress,
+    isRunning,
+    currentOperation
+  });
+});
+
 // Get owned tokens (instant response from local database)
 app.get('/api/tokens', async (req, res) => {
   try {
@@ -416,6 +426,7 @@ app.post('/api/mint', async (req, res) => {
     
     isRunning = false;
     currentOperation = null;
+    currentOperationProgress = null;
     
     broadcast({
       type: 'operationComplete',
@@ -432,6 +443,7 @@ app.post('/api/mint', async (req, res) => {
   } catch (error) {
     isRunning = false;
     currentOperation = null;
+    currentOperationProgress = null;
     log(`❌ Mint operation error: ${error.message}`, 'error');
     res.status(500).json({ error: error.message });
   }
@@ -486,6 +498,7 @@ app.post('/api/convert-prizes', async (req, res) => {
     
     isRunning = false;
     currentOperation = null;
+    currentOperationProgress = null;
     
     broadcast({
       type: 'operationComplete',
@@ -502,6 +515,7 @@ app.post('/api/convert-prizes', async (req, res) => {
   } catch (error) {
     isRunning = false;
     currentOperation = null;
+    currentOperationProgress = null;
     log(`❌ Prize ticket conversion error: ${error.message}`, 'error');
     res.status(500).json({ error: error.message });
   }
@@ -528,10 +542,26 @@ app.post('/api/auto-spin-claim', async (req, res) => {
     
     log(`🎰 Starting auto-spin and claim operation...`, 'info');
     
-    const result = await spinner.autoSpinAndClaim();
+    // Progress callback for real-time updates
+    const progressCallback = (progress) => {
+      currentOperationProgress = { 
+        operation: 'auto-spin-claim', 
+        ...progress,
+        timestamp: new Date().toISOString()
+      };
+      
+      broadcast({
+        type: 'operationProgress',
+        data: currentOperationProgress
+      });
+      log(`🎰 Conversion progress: ${progress.message} (${progress.progress}%)`, 'info');
+    };
+    
+    const result = await spinner.autoSpinAndClaim(progressCallback);
     
     isRunning = false;
     currentOperation = null;
+    currentOperationProgress = null;
     
     broadcast({
       type: 'operationComplete',
@@ -563,6 +593,7 @@ app.post('/api/auto-spin-claim', async (req, res) => {
   } catch (error) {
     isRunning = false;
     currentOperation = null;
+    currentOperationProgress = null;
     log(`❌ Auto-spin and claim error: ${error.message}`, 'error');
     res.status(500).json({ error: error.message });
   }
@@ -643,6 +674,7 @@ app.post('/api/full-automation', async (req, res) => {
     
     isRunning = false;
     currentOperation = null;
+    currentOperationProgress = null;
     
     const result = {
       success: mintResult.success && spinResult.success,
@@ -671,7 +703,71 @@ app.post('/api/full-automation', async (req, res) => {
   } catch (error) {
     isRunning = false;
     currentOperation = null;
+    currentOperationProgress = null;
     log(`❌ Full automation error: ${error.message}`, 'error');
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Burn losing Prize Tickets
+app.post('/api/burn-tickets', async (req, res) => {
+  try {
+    if (!spinner) {
+      return res.status(400).json({ error: 'System not initialized' });
+    }
+    
+    if (isRunning) {
+      return res.status(400).json({ error: 'Another operation is currently running' });
+    }
+    
+    isRunning = true;
+    currentOperation = 'burn-tickets';
+    
+    broadcast({
+      type: 'operationStart',
+      data: { operation: 'burn-tickets' }
+    });
+    
+    log(`🔥 Starting to burn losing Prize Tickets...`, 'info');
+    
+    // Progress callback for real-time updates
+    const progressCallback = (progress) => {
+      currentOperationProgress = { 
+        operation: 'burn-tickets', 
+        ...progress,
+        timestamp: new Date().toISOString()
+      };
+      
+      broadcast({
+        type: 'operationProgress',
+        data: currentOperationProgress
+      });
+      log(`🔥 Burn progress: ${progress.message} (${progress.progress}%)`, 'info');
+    };
+    
+    const result = await spinner.burnLosingTickets(progressCallback);
+    
+    isRunning = false;
+    currentOperation = null;
+    currentOperationProgress = null;
+    
+    broadcast({
+      type: 'operationComplete',
+      data: { operation: 'burn-tickets', result }
+    });
+    
+    if (result.success) {
+      log(`✅ Ticket burning completed: ${result.burned} tickets burned`, 'success');
+    } else {
+      log(`❌ Ticket burning failed: ${result.error || 'Unknown error'}`, 'error');
+    }
+    
+    res.json(result);
+  } catch (error) {
+    isRunning = false;
+    currentOperation = null;
+    currentOperationProgress = null;
+    log(`❌ Burn tickets error: ${error.message}`, 'error');
     res.status(500).json({ error: error.message });
   }
 });

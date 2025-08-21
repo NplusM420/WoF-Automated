@@ -7,10 +7,12 @@ import {
   Wallet,
   Activity,
   Clock,
-  RotateCcw
+  RotateCcw,
+  Trash2
 } from 'lucide-react';
+import OperationProgress from './OperationProgress';
 
-function Dashboard({ status, tokens, spinStatus, onRefresh }) {
+function Dashboard({ status, tokens, spinStatus, operationProgress, onRefresh }) {
   const [dailyTargetLimit, setDailyTargetLimit] = useState(50);
   const [isLoading, setIsLoading] = useState(false);
   const [dailyAutomation, setDailyAutomation] = useState(null);
@@ -94,6 +96,7 @@ function Dashboard({ status, tokens, spinStatus, onRefresh }) {
   const handleMintOne = () => executeOperation('mint', { quantity: 1 });
   const handleAutoSpinClaim = () => executeOperation('auto-spin-claim');
   const handleFullAutomation = () => executeOperation('full-automation', { quantity: dailyTargetLimit });
+  const handleBurnTickets = () => executeOperation('burn-tickets');
 
   // Daily automation handlers
   const handleDailyAutomationToggle = async () => {
@@ -125,6 +128,13 @@ function Dashboard({ status, tokens, spinStatus, onRefresh }) {
 
   return (
     <div className="space-y-6">
+      {/* Real-time Operation Progress */}
+      <OperationProgress 
+        operation={status.currentOperation}
+        progress={operationProgress}
+        isVisible={status.isRunning && operationProgress}
+      />
+      
       {/* Status Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-slate-800 rounded-xl p-6 card-glow">
@@ -242,6 +252,39 @@ function Dashboard({ status, tokens, spinStatus, onRefresh }) {
                 {status.isRunning && status.currentOperation === 'full-automation' ? 'Running...' : `Mint ${dailyTargetLimit} + Auto Process`}
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Ticket Management */}
+      <div className="bg-slate-800 rounded-xl p-6 card-glow">
+        <h2 className="text-xl font-bold mb-4 flex items-center">
+          <Trash2 className="w-5 h-5 mr-2 text-red-400" />
+          Ticket Management
+        </h2>
+        
+        <div className="space-y-4">
+          <p className="text-slate-400 text-sm">
+            Clean up your wallet by burning losing Prize Tickets. This transfers losing tickets to a dead address, 
+            keeping only winning tickets in your wallet.
+          </p>
+          
+          <button
+            onClick={handleBurnTickets}
+            disabled={!status.initialized || status.isRunning || isLoading}
+            className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>
+              {status.isRunning && status.currentOperation === 'burn-tickets' ? 'Burning Tickets...' : 'Burn Losing Tickets'}
+            </span>
+          </button>
+          
+          <div className="text-xs text-slate-500 bg-slate-700 rounded-lg p-3">
+            <p className="font-medium text-yellow-400 mb-1">⚠️ Safety First:</p>
+            <p>• Only explicitly losing tickets will be burned</p>
+            <p>• Winning and unknown status tickets are preserved</p>
+            <p>• Tickets are transferred to dead address: 0x000...dEaD</p>
           </div>
         </div>
       </div>
